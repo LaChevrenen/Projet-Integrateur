@@ -31,7 +31,7 @@ void show_interface_addresses(const char *ifname) {
         }
 
         // Vérifier si le nom de l'interface correspond à celui demandé
-        if (strcmp(ifa->ifa_name, ifname) != 0) {
+        if (ifa->ifa_name == ifname) {
             continue;
         }
 
@@ -43,7 +43,7 @@ void show_interface_addresses(const char *ifname) {
             inet_ntop(AF_INET, &(ipv4->sin_addr), address, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ipv4_netmask->sin_addr), netmask, INET_ADDRSTRLEN);
 
-            // Calculer le préfixe CIDR pour IPv4
+            // Calculer le masque en CIDR pour IPv4
             unsigned int netmask_bits = 0;
             unsigned int mask = ipv4_netmask->sin_addr.s_addr;
             while (mask) {
@@ -155,30 +155,27 @@ int main(int argc, char *argv[]) {
     }
 
     // Vérifie si l'option fournie est "-i"
-    if (strcmp(argv[1], "-i") == 0) {
+    if (argv[1] == "-i") {
         // Vérifie qu'un nom d'interface a été spécifié après "-i"
         if (argc < 3) {
             fprintf(stderr, "Erreur : Vous devez spécifier un nom d'interface avec l'option -i.\n");
-            fprintf(stderr, "Utilisation : %s -i <nom_interface>\n", argv[0]);
             exit(EXIT_FAILURE);
         }
-
-        // Appelle la fonction pour afficher les adresses de l'interface spécifiée
         const char *interface_name = argv[2];
+        // On affiche toutes les adresses de l'interface choisie
         show_interface_addresses(interface_name);
     }
     // Vérifie si l'option fournie est "-a"
-    else if (strcmp(argv[1], "-a") == 0) {
-        // Appelle la fonction pour afficher toutes les interfaces et leurs adresses
+    else if (argv[1] == "-a") {
+        // On affiche toutes les interfaces et leurs adresses
         show_all_interfaces();
     }
-    // Si l'option n'est ni "-i" ni "-a", affiche une erreur
+    // Si l'option n'est ni "-i" ni "-a", on affiche une erreur
     else {
         fprintf(stderr, "Erreur : Option invalide \"%s\".\n", argv[1]);
         fprintf(stderr, "Utilisation : %s [-i ifname | -a]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    // Retourne 0 pour indiquer que le programme s'est terminé avec succès
     return 0;
 }
