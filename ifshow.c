@@ -7,7 +7,6 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
-
 // Fonction pour afficher les adresses IPv4 et IPv6 d'une interface réseau spécifique
 void show_interface_addresses(const char *ifname) {
     struct ifaddrs *ifaddr = NULL;
@@ -31,7 +30,7 @@ void show_interface_addresses(const char *ifname) {
         }
 
         // Vérifier si le nom de l'interface correspond à celui demandé
-        if (ifa->ifa_name == ifname) {
+        if (strcmp(ifa->ifa_name, ifname) != 0) {
             continue;
         }
 
@@ -81,7 +80,6 @@ void show_interface_addresses(const char *ifname) {
 }
 
 // Fonction pour afficher toutes les interfaces réseau et leurs adresses associées
-
 void show_all_interfaces() {
     struct ifaddrs *ifaddr = NULL;
     struct ifaddrs *ifa = NULL;
@@ -148,14 +146,13 @@ void show_all_interfaces() {
 }
 
 int main(int argc, char *argv[]) {
-
     if (argc == 1) {
         fprintf(stderr, "Erreur : Aucun argument fourni.\n");
         exit(EXIT_FAILURE);
     }
 
     // Vérifie si l'option fournie est "-i"
-    if (argv[1] == "-i") {
+    if (strcmp(argv[1], "-i") == 0) {
         // Vérifie qu'un nom d'interface a été spécifié après "-i"
         if (argc < 3) {
             fprintf(stderr, "Erreur : Vous devez spécifier un nom d'interface avec l'option -i.\n");
@@ -166,7 +163,7 @@ int main(int argc, char *argv[]) {
         show_interface_addresses(interface_name);
     }
     // Vérifie si l'option fournie est "-a"
-    else if (argv[1] == "-a") {
+    else if (strcmp(argv[1], "-a") == 0) {
         // On affiche toutes les interfaces et leurs adresses
         show_all_interfaces();
     }
