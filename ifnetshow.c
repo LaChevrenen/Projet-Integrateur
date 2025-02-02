@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Affichage de la réponse du serveur
-    printf("Réponse du serveur : \n%s\n", buffer);
+    //printf("Réponse du serveur : \n%s\n", buffer);
 
     // Fermeture du socket
     close(client_socket);
