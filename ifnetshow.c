@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
     int client_socket;
     struct sockaddr_in server_addr;
-    char hostname[BUFFER_SIZE];
+    char response[BUFFER_SIZE];
     char *server_ip = NULL;
 
     // Vérifier si l'option -n est fournie
@@ -42,11 +42,19 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // Recevoir le hostname
-    memset(hostname, 0, BUFFER_SIZE);
-    recv(client_socket, hostname, BUFFER_SIZE, 0);
-    printf("Nom d'hôte reçu : %s\n", hostname);
+    // Recevoir la réponse du serveur (nom d'hôte ou adresse IP)
+    memset(response, 0, BUFFER_SIZE);
+    int bytes_received = recv(client_socket, response, BUFFER_SIZE, 0);
+    if (bytes_received <= 0) {
+        perror("Erreur de réception des données");
+        close(client_socket);
+        exit(1);
+    }
 
+    // Afficher la réponse reçue (adresse IP ou autre information)
+    printf("Réponse du serveur : %s\n", response);
+
+    // Fermeture du socket
     close(client_socket);
     return 0;
 }
