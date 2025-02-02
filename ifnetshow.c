@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 241104
+#define PORT 2424
 #define BUFFER_SIZE 2048
 
 int main(int argc, char *argv[]) {
