@@ -10,14 +10,35 @@
 int main(int argc, char *argv[]) {
     int client_socket;
     struct sockaddr_in server_addr;
-    char response[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
     char *server_ip = NULL;
+    char *interface_name = NULL;
+    int option_found = 0;
 
-    // Vérifier si l'option -n est fournie
-    if (argc == 3 && strcmp(argv[1], "-n") == 0) {
-        server_ip = argv[2]; // Récupérer l'adresse IP fournie
-    } else {
-        fprintf(stderr, "Usage: %s -n <adresse_ip>\n", argv[0]);
+    // Vérifier que les arguments sont valides
+    if (argc < 4) {
+        fprintf(stderr, "Usage: %s -n <adresse_ip> -i <interface_name> | -a\n", argv[0]);
+        exit(1);
+    }
+
+    // Analyser les arguments
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-n") == 0 && i + 1 < argc) {
+            server_ip = argv[i + 1];
+            i++; // Passer à l'argument suivant
+        }
+        else if (strcmp(argv[i], "-i") == 0 && i + 1 < argc) {
+            interface_name = argv[i + 1];
+            i++; // Passer à l'argument suivant
+            option_found = 1;
+        }
+        else if (strcmp(argv[i], "-a") == 0) {
+            option_found = 2;
+        }
+    }
+
+    if (!server_ip) {
+        fprintf(stderr, "Erreur : Vous devez spécifier une adresse IP avec l'option -n.\n");
         exit(1);
     }
 
@@ -36,23 +57,36 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // Connexion à l'agent
+    // Connexion au serveur
     if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
         perror("Erreur de connexion");
         exit(1);
     }
 
-    // Recevoir la réponse du serveur (nom d'hôte ou adresse IP)
-    memset(response, 0, BUFFER_SIZE);
-    int bytes_received = recv(client_socket, response, BUFFER_SIZE, 0);
+    // Construire la commande à envoyer au serveur
+    if (option_found == 1) {
+        snprintf(buffer, sizeof(buffer), "-i %s", interface_name);
+    } else if (option_found == 2) {
+        snprintf(buffer, sizeof(buffer), "-a");
+    } else {
+        fprintf(stderr, "Erreur : Option -i ou -a attendue.\n");
+        exit(1);
+    }
+
+    // Envoi de la commande au serveur
+    send(client_socket, buffer, strlen(buffer), 0);
+
+    // Réception de la réponse du serveur
+    memset(buffer, 0, sizeof(buffer));
+    int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
     if (bytes_received <= 0) {
         perror("Erreur de réception des données");
         close(client_socket);
         exit(1);
     }
 
-    // Afficher la réponse reçue (adresse IP ou autre information)
-    printf("Réponse du serveur : %s\n", response);
+    // Affichage de la réponse du serveur
+    printf("Réponse du serveur : \n%s\n", buffer);
 
     // Fermeture du socket
     close(client_socket);

@@ -91,11 +91,86 @@ char* show_interface_addresses(const char *ifname) {
     return buffer;
 }
 
+// Fonction pour afficher toutes les interfaces réseau et leurs adresses associées
+char* show_all_interfaces() {
+    struct ifaddrs *ifaddr = NULL;
+    struct ifaddrs *ifa = NULL;
+    char address[INET6_ADDRSTRLEN];
+    char netmask[INET6_ADDRSTRLEN];
+    static char buffer[MAX_BUFFER_SIZE];  // Buffer statique pour renvoyer le résultat
+    int offset;
+
+    // Récupérer la liste des interfaces réseau
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("Erreur lors de l'appel à getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialiser le buffer
+    offset = snprintf(buffer, MAX_BUFFER_SIZE, "Liste des interfaces réseau et leurs adresses associées :\n");
+
+    // Parcourir la liste des interfaces
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) {
+            continue;
+        }
+
+        // Ajouter l'interface au buffer
+        offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "\nInterface : %s\n", ifa->ifa_name);
+
+        // Vérifier si l'adresse est de type IPv4
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)ifa->ifa_addr;
+            struct sockaddr_in *ipv4_netmask = (struct sockaddr_in *)ifa->ifa_netmask; // Masque IPv4
+
+            inet_ntop(AF_INET, &(ipv4->sin_addr), address, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ipv4_netmask->sin_addr), netmask, INET_ADDRSTRLEN);
+
+            unsigned int netmask_bits = 0;
+            unsigned int mask = ipv4_netmask->sin_addr.s_addr;
+            while (mask) {
+                netmask_bits += mask & 1;
+                mask >>= 1;
+            }
+
+            // Ajouter l'adresse IPv4 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv4 : %s/%u\n", address, netmask_bits);
+        }
+        // Vérifier si l'adresse est de type IPv6
+        else if (ifa->ifa_addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+            struct sockaddr_in6 *ipv6_netmask = (struct sockaddr_in6 *)ifa->ifa_netmask; // Masque IPv6
+
+            inet_ntop(AF_INET6, &(ipv6->sin6_addr), address, INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(ipv6_netmask->sin6_addr), netmask, INET6_ADDRSTRLEN);
+
+            unsigned int netmask_bits = 0;
+            unsigned int *mask = (unsigned int *)&ipv6_netmask->sin6_addr;
+            for (int i = 0; i < 4; i++) {
+                unsigned int m = mask[i];
+                while (m) {
+                    netmask_bits += m & 1;
+                    m >>= 1;
+                }
+            }
+
+            // Ajouter l'adresse IPv6 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "\nFin de la liste des interfaces réseau.\n");
+
+    return buffer;
+}
+
 
 int main() {
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_size;
+    char buffer[1024];
 
     // Création du socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -121,7 +196,7 @@ int main() {
         exit(1);
     }
 
-    printf("Agent en écoute sur le port %d...\n", PORT);
+    //printf("Agent en écoute sur le port %d...\n", PORT);
 
     while (1) {
         addr_size = sizeof(client_addr);
@@ -131,15 +206,33 @@ int main() {
             continue;
         }
 
-        printf("Connexion établie avec un client.\n");
+        //printf("Connexion établie avec un client.\n");
 
-        // Récupérer les adresses de l'interface et envoyer au client
-        char *result = show_interface_addresses("eth0");  // Remplacer par le nom de l'interface que tu veux
-        if (send(client_socket, result, strlen(result), 0) == -1) {
-            perror("Erreur lors de l'envoi des données au client");
+        // Lire la commande envoyée par le client
+        memset(buffer, 0, sizeof(buffer));
+        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+        if (bytes_received <= 0) {
+            perror("Erreur de réception des données");
+            close(client_socket);
+            continue;
         }
 
-        // Fermer le socket client après l'envoi
+        // Vérifie si l'option est -i ou -a
+        if (strncmp(buffer, "-i", 2) == 0) {
+            // Récupérer le nom de l'interface et envoyer les adresses
+            char *interface_name = buffer + 3;  // On suppose que le nom de l'interface suit l'option -i
+            char *result = show_interface_addresses(interface_name);
+            send(client_socket, result, strlen(result), 0);
+        } else if (strncmp(buffer, "-a", 2) == 0) {
+            // Envoyer toutes les interfaces
+            char *result = show_all_interfaces();
+            send(client_socket, result, strlen(result), 0);
+        } else {
+            // Option invalide
+            const char *error_message = "Erreur : Option invalide.\n";
+            send(client_socket, error_message, strlen(error_message), 0);
+        }
+
         close(client_socket);
     }
 
