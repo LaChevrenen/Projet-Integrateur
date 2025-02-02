@@ -11,12 +11,12 @@
 #define MAX_BUFFER_SIZE 2048
 
 // Fonction pour afficher les adresses IPv4 et IPv6 d'une interface réseau spécifique
-void show_interface_addresses(const char *ifname) {
+char* show_interface_addresses(const char *ifname) {
     struct ifaddrs *ifaddr = NULL;
     struct ifaddrs *ifa = NULL;
     char address[INET6_ADDRSTRLEN];
     char netmask[INET6_ADDRSTRLEN];
-    char buffer[MAX_BUFFER_SIZE];
+    static char buffer[MAX_BUFFER_SIZE];  // Buffer statique pour renvoyer le résultat
     int offset;
 
     // Obtenir la liste des interfaces réseau
@@ -81,30 +81,21 @@ void show_interface_addresses(const char *ifname) {
             // Ajouter l'adresse IPv6 et le CIDR au buffer
             offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
         }
-
-        // Si le buffer est plein, on l'affiche et on réinitialise
-        if (offset >= MAX_BUFFER_SIZE - 100) {
-            printf("%s", buffer);
-            offset = 0; // Réinitialiser le buffer
-        }
-    }
-
-    // Si des données restent dans le buffer, on les affiche
-    if (offset > 0) {
-        printf("%s", buffer);
     }
 
     freeifaddrs(ifaddr);
-    printf("Fin de la liste des adresses pour l'interface : %s\n", ifname);
+    snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "Fin de la liste des adresses pour l'interface : %s\n", ifname);
+
+    return buffer;
 }
 
 // Fonction pour afficher toutes les interfaces réseau et leurs adresses associées
-void show_all_interfaces() {
+char* show_all_interfaces() {
     struct ifaddrs *ifaddr = NULL;
     struct ifaddrs *ifa = NULL;
     char address[INET6_ADDRSTRLEN];
     char netmask[INET6_ADDRSTRLEN];
-    char buffer[MAX_BUFFER_SIZE];
+    static char buffer[MAX_BUFFER_SIZE];  // Buffer statique pour renvoyer le résultat
     int offset;
 
     // Récupérer la liste des interfaces réseau
@@ -164,21 +155,12 @@ void show_all_interfaces() {
             // Ajouter l'adresse IPv6 et le CIDR au buffer
             offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
         }
-
-        // Si le buffer est plein, on l'affiche et on réinitialise
-        if (offset >= MAX_BUFFER_SIZE - 100) {
-            printf("%s", buffer);
-            offset = 0; // Réinitialiser le buffer
-        }
-    }
-
-    // Si des données restent dans le buffer, on les affiche
-    if (offset > 0) {
-        printf("%s", buffer);
     }
 
     freeifaddrs(ifaddr);
-    printf("\nFin de la liste des interfaces réseau.\n");
+    snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "\nFin de la liste des interfaces réseau.\n");
+
+    return buffer;
 }
 
 int main(int argc, char *argv[]) {
@@ -195,13 +177,17 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
         const char *interface_name = argv[2];
-        // On affiche toutes les adresses de l'interface choisie
-        show_interface_addresses(interface_name);
+        // On récupère le buffer contenant les adresses de l'interface choisie
+        char *result = show_interface_addresses(interface_name);
+        // On affiche les adresses dans le main
+        printf("%s", result);
     }
     // Vérifie si l'option fournie est "-a"
     else if (strcmp(argv[1], "-a") == 0) {
-        // On affiche toutes les interfaces et leurs adresses
-        show_all_interfaces();
+        // On récupère le buffer contenant toutes les interfaces et leurs adresses
+        char *result = show_all_interfaces();
+        // On affiche les adresses dans le main
+        printf("%s", result);
     }
     // Si l'option n'est ni "-i" ni "-a", on affiche une erreur
     else {
