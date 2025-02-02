@@ -2,28 +2,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
 #define PORT 5000
-#define BUFFER_SIZE 1024
+#define MAX_BUFFER_SIZE 2048
 
-void send_interface_addresses(int client_socket, const char *ifname) {
+
+
+// Fonction pour afficher les adresses IPv4 et IPv6 d'une interface réseau spécifique
+char* show_interface_addresses(const char *ifname) {
     struct ifaddrs *ifaddr = NULL;
     struct ifaddrs *ifa = NULL;
     char address[INET6_ADDRSTRLEN];
     char netmask[INET6_ADDRSTRLEN];
+    static char buffer[MAX_BUFFER_SIZE];  // Buffer statique pour renvoyer le résultat
+    int offset;
 
     // Obtenir la liste des interfaces réseau
     if (getifaddrs(&ifaddr) == -1) {
         perror("Erreur lors de l'appel à getifaddrs");
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    // Envoyer le titre de l'interface
-    char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header), "Adresses associées à l'interface : %s\n", ifname);
-    send(client_socket, header, strlen(header), 0);
+    // Initialiser le buffer
+    offset = snprintf(buffer, MAX_BUFFER_SIZE, "Adresses associées à l'interface : %s\n", ifname);
 
     // Parcourir la liste des interfaces
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -53,10 +58,8 @@ void send_interface_addresses(int client_socket, const char *ifname) {
                 mask >>= 1;
             }
 
-            // Envoi de l'adresse IPv4 et du CIDR
-            char ipv4_msg[BUFFER_SIZE];
-            snprintf(ipv4_msg, sizeof(ipv4_msg), "  Adresse IPv4 : %s/%u\n", address, netmask_bits);
-            send(client_socket, ipv4_msg, strlen(ipv4_msg), 0);
+            // Ajouter l'adresse IPv4 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv4 : %s/%u\n", address, netmask_bits);
         }
         // Vérifier si l'adresse est de type IPv6
         else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -77,15 +80,17 @@ void send_interface_addresses(int client_socket, const char *ifname) {
                 }
             }
 
-            // Envoi de l'adresse IPv6 et du CIDR
-            char ipv6_msg[BUFFER_SIZE];
-            snprintf(ipv6_msg, sizeof(ipv6_msg), "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
-            send(client_socket, ipv6_msg, strlen(ipv6_msg), 0);
+            // Ajouter l'adresse IPv6 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
         }
     }
 
     freeifaddrs(ifaddr);
+    snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "Fin de la liste des adresses pour l'interface : %s\n", ifname);
+
+    return buffer;
 }
+
 
 int main() {
     int server_socket, client_socket;
@@ -127,7 +132,15 @@ int main() {
         }
 
         printf("Connexion établie avec un client.\n");
-        send_interface_addresses(client_socket, "eth0");  // Remplacer par le nom de l'interface que tu veux
+
+        // Récupérer les adresses de l'interface et envoyer au client
+        char *result = show_interface_addresses("eth0");  // Remplacer par le nom de l'interface que tu veux
+        if (send(client_socket, result, strlen(result), 0) == -1) {
+            perror("Erreur lors de l'envoi des données au client");
+        }
+
+        // Fermer le socket client après l'envoi
+        close(client_socket);
     }
 
     close(server_socket);
