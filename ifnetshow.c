@@ -4,55 +4,41 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 12345
+#define SERVER_IP "127.0.0.1"  // Modifier avec l'IP de l'agent
+#define PORT 5000
 #define BUFFER_SIZE 1024
 
-void send_request(const char *server_ip, const char *request) {
+int main() {
     int client_socket;
     struct sockaddr_in server_addr;
-    char buffer[BUFFER_SIZE];
+    char hostname[BUFFER_SIZE];
 
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("Erreur lors de la création de la socket");
-        exit(EXIT_FAILURE);
+    // Création du socket
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == -1) {
+        perror("Erreur de création du socket");
+        exit(1);
     }
 
+    // Configuration de l'adresse du serveur
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) {
-        perror("Adresse IP invalide");
-        close(client_socket);
-        exit(EXIT_FAILURE);
+    if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {
+        perror("Adresse invalide");
+        exit(1);
     }
 
+    // Connexion à l'agent
     if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        perror("Erreur lors de la connexion au serveur");
-        close(client_socket);
-        exit(EXIT_FAILURE);
+        perror("Erreur de connexion");
+        exit(1);
     }
 
-    send(client_socket, request, strlen(request), 0);
-    int bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-    if (bytes_received > 0) {
-        buffer[bytes_received] = '\0';
-        printf("Réponse du serveur :\n%s\n", buffer);
-    } else {
-        printf("Aucune réponse reçue du serveur.\n");
-    }
+    // Recevoir le hostname
+    memset(hostname, 0, BUFFER_SIZE);
+    recv(client_socket, hostname, BUFFER_SIZE, 0);
+    printf("Nom d'hôte reçu : %s\n", hostname);
 
     close(client_socket);
-}
-
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Utilisation : %s <adresse_IP> <commande>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    const char *server_ip = argv[1];
-    const char *request = argv[2];
-
-    send_request(server_ip, request);
-
     return 0;
 }
