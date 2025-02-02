@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
-#define PORT 5000
+#define PORT 241104
 #define MAX_BUFFER_SIZE 2048
 
 
@@ -23,7 +23,7 @@ char* show_interface_addresses(const char *ifname) {
 
     // Obtenir la liste des interfaces réseau
     if (getifaddrs(&ifaddr) == -1) {
-        perror("Erreur lors de l'appel à getifaddrs");
+        //perror("Erreur lors de l'appel à getifaddrs");
         exit(EXIT_FAILURE);
     }
 
@@ -102,7 +102,7 @@ char* show_all_interfaces() {
 
     // Récupérer la liste des interfaces réseau
     if (getifaddrs(&ifaddr) == -1) {
-        perror("Erreur lors de l'appel à getifaddrs");
+        //perror("Erreur lors de l'appel à getifaddrs");
         exit(EXIT_FAILURE);
     }
 
@@ -175,7 +175,7 @@ int main() {
     // Création du socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
-        perror("Erreur de création du socket");
+        //perror("Erreur de création du socket");
         exit(1);
     }
 
@@ -186,13 +186,13 @@ int main() {
 
     // Liaison du socket
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        perror("Erreur de bind");
+        //perror("Erreur de bind");
         exit(1);
     }
 
     // Mise en écoute
     if (listen(server_socket, 5) == -1) {
-        perror("Erreur de listen");
+        //perror("Erreur de listen");
         exit(1);
     }
 
@@ -202,7 +202,7 @@ int main() {
         addr_size = sizeof(client_addr);
         client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
         if (client_socket == -1) {
-            perror("Erreur d'accept");
+            //perror("Erreur d'accept");
             continue;
         }
 
@@ -212,7 +212,7 @@ int main() {
         memset(buffer, 0, sizeof(buffer));
         int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
         if (bytes_received <= 0) {
-            perror("Erreur de réception des données");
+            //perror("Erreur de réception des données");
             close(client_socket);
             continue;
         }
