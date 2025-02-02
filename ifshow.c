@@ -7,12 +7,17 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
+// Taille maximale du buffer
+#define MAX_BUFFER_SIZE 2048
+
 // Fonction pour afficher les adresses IPv4 et IPv6 d'une interface réseau spécifique
 void show_interface_addresses(const char *ifname) {
     struct ifaddrs *ifaddr = NULL;
     struct ifaddrs *ifa = NULL;
     char address[INET6_ADDRSTRLEN];
     char netmask[INET6_ADDRSTRLEN];
+    char buffer[MAX_BUFFER_SIZE];
+    int offset;
 
     // Obtenir la liste des interfaces réseau
     if (getifaddrs(&ifaddr) == -1) {
@@ -20,7 +25,8 @@ void show_interface_addresses(const char *ifname) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Adresses associées à l'interface : %s\n", ifname);
+    // Initialiser le buffer
+    offset = snprintf(buffer, MAX_BUFFER_SIZE, "Adresses associées à l'interface : %s\n", ifname);
 
     // Parcourir la liste des interfaces
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -50,7 +56,8 @@ void show_interface_addresses(const char *ifname) {
                 mask >>= 1;
             }
 
-            printf("  Adresse IPv4 : %s/%u\n", address, netmask_bits);
+            // Ajouter l'adresse IPv4 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv4 : %s/%u\n", address, netmask_bits);
         }
         // Vérifier si l'adresse est de type IPv6
         else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -71,8 +78,20 @@ void show_interface_addresses(const char *ifname) {
                 }
             }
 
-            printf("  Adresse IPv6 : %s/%u\n", address, netmask_bits);
+            // Ajouter l'adresse IPv6 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
         }
+
+        // Si le buffer est plein, on l'affiche et on réinitialise
+        if (offset >= MAX_BUFFER_SIZE - 100) {
+            printf("%s", buffer);
+            offset = 0; // Réinitialiser le buffer
+        }
+    }
+
+    // Si des données restent dans le buffer, on les affiche
+    if (offset > 0) {
+        printf("%s", buffer);
     }
 
     freeifaddrs(ifaddr);
@@ -85,6 +104,8 @@ void show_all_interfaces() {
     struct ifaddrs *ifa = NULL;
     char address[INET6_ADDRSTRLEN];
     char netmask[INET6_ADDRSTRLEN];
+    char buffer[MAX_BUFFER_SIZE];
+    int offset;
 
     // Récupérer la liste des interfaces réseau
     if (getifaddrs(&ifaddr) == -1) {
@@ -92,7 +113,8 @@ void show_all_interfaces() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Liste des interfaces réseau et leurs adresses associées :\n");
+    // Initialiser le buffer
+    offset = snprintf(buffer, MAX_BUFFER_SIZE, "Liste des interfaces réseau et leurs adresses associées :\n");
 
     // Parcourir la liste des interfaces
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -100,7 +122,8 @@ void show_all_interfaces() {
             continue;
         }
 
-        printf("\nInterface : %s\n", ifa->ifa_name);
+        // Ajouter l'interface au buffer
+        offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "\nInterface : %s\n", ifa->ifa_name);
 
         // Vérifier si l'adresse est de type IPv4
         if (ifa->ifa_addr->sa_family == AF_INET) {
@@ -117,7 +140,8 @@ void show_all_interfaces() {
                 mask >>= 1;
             }
 
-            printf("  Adresse IPv4 : %s/%u\n", address, netmask_bits);
+            // Ajouter l'adresse IPv4 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv4 : %s/%u\n", address, netmask_bits);
         }
         // Vérifier si l'adresse est de type IPv6
         else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -137,8 +161,20 @@ void show_all_interfaces() {
                 }
             }
 
-            printf("  Adresse IPv6 : %s/%u\n", address, netmask_bits);
+            // Ajouter l'adresse IPv6 et le CIDR au buffer
+            offset += snprintf(buffer + offset, MAX_BUFFER_SIZE - offset, "  Adresse IPv6 : %s/%u\n", address, netmask_bits);
         }
+
+        // Si le buffer est plein, on l'affiche et on réinitialise
+        if (offset >= MAX_BUFFER_SIZE - 100) {
+            printf("%s", buffer);
+            offset = 0; // Réinitialiser le buffer
+        }
+    }
+
+    // Si des données restent dans le buffer, on les affiche
+    if (offset > 0) {
+        printf("%s", buffer);
     }
 
     freeifaddrs(ifaddr);
