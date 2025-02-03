@@ -5,11 +5,8 @@
 #include <arpa/inet.h>
 
 #define PORT 5000
-<<<<<<< HEAD
 #define BUFFER_SIZE 2048
-=======
-#define BUFFER_SIZE 1024
->>>>>>> parent of 57b3c19 (the end)
+
 
 int main(int argc, char *argv[]) {
     int client_socket;
@@ -90,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Affichage de la réponse du serveur
-    //printf("Réponse du serveur : \n%s\n", buffer);
+    printf("Réponse du serveur : \n%s\n", buffer);
 
     // Fermeture du socket
     close(client_socket);

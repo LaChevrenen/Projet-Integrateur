@@ -166,6 +166,7 @@ char* show_all_interfaces() {
 }
 
 
+
 int main() {
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
@@ -196,7 +197,7 @@ int main() {
         exit(1);
     }
 
-    //printf("Agent en écoute sur le port %d...\n", PORT);
+    printf("Agent en écoute sur le port %d...\n", PORT);
 
     while (1) {
         addr_size = sizeof(client_addr);
@@ -206,7 +207,7 @@ int main() {
             continue;
         }
 
-        //printf("Connexion établie avec un client.\n");
+        printf("Connexion établie avec un client.\n");
 
         // Lire la commande envoyée par le client
         memset(buffer, 0, sizeof(buffer));
