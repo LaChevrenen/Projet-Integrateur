@@ -202,7 +202,7 @@ int main() {
         addr_size = sizeof(client_addr);
         client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
         if (client_socket == -1) {
-            //perror("Erreur d'accept");
+            perror("Erreur d'accept");
             continue;
         }
 
