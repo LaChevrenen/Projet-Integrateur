@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 2424
+#define PORT 5000
 #define BUFFER_SIZE 2048
 
 int main(int argc, char *argv[]) {
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     // Création du socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1) {
-        //perror("Erreur de création du socket");
+        perror("Erreur de création du socket");
         exit(1);
     }
 
@@ -53,13 +53,13 @@ int main(int argc, char *argv[]) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) {
-        //perror("Adresse IP invalide");
+        perror("Adresse IP invalide");
         exit(1);
     }
 
     // Connexion au serveur
     if (connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        //perror("Erreur de connexion");
+        perror("Erreur de connexion");
         exit(1);
     }
 
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     memset(buffer, 0, sizeof(buffer));
     int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
     if (bytes_received <= 0) {
-        //perror("Erreur de réception des données");
+        perror("Erreur de réception des données");
         close(client_socket);
         exit(1);
     }

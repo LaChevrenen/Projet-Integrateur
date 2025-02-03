@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
-#define PORT 2424
+#define PORT 5000
 #define MAX_BUFFER_SIZE 2048
 
 
